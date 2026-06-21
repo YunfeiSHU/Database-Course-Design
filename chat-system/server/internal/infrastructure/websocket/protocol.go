@@ -1,6 +1,10 @@
 package websocket
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	presencedomain "chat-system/server/internal/presence/domain"
+)
 
 const (
 	TypeChat         = "chat"
@@ -23,18 +27,14 @@ type ChatData struct {
 	SendTime string `json:"send_time,omitempty"`
 }
 
-type SystemData struct {
-	Content string `json:"content"`
-}
-
-type PresenceData struct {
-	Account string `json:"account"`
-}
-
 func Encode(message Message) []byte {
 	data, _ := json.Marshal(message)
 	return data
 }
+
+type SystemData = presencedomain.SystemData
+
+type PresenceData = presencedomain.PresenceData
 
 func NewMessage(messageType string, data interface{}) Message {
 	encoded, _ := json.Marshal(data)

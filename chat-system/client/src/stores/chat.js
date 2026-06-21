@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ElNotification } from 'element-plus'
-import { acceptFriendRequest, addFriend, getHistory, listConversations, listFriendRequests, listFriends, login, register } from '../api/http'
+import { approveFriendRequest, getConversationHistory, getConversationList, getFriendList, getFriendRequestList, login, register, requestFriend } from '../api/http'
 import { createChatSocket } from '../websocket/chatSocket'
 
 const MESSAGE_STATUS_TEXT = {
@@ -118,23 +118,23 @@ export const useChatStore = defineStore('chat', {
       localStorage.removeItem('chat_nickname')
     },
     async refreshFriends() {
-      this.friends = await listFriends()
+      this.friends = await getFriendList()
     },
     async refreshConversations() {
-      this.conversations = await listConversations()
+      this.conversations = await getConversationList()
       if (this.currentConversation) {
         const peerAccount = conversationPeerAccount(this.currentConversation)
         this.currentConversation = this.conversations.find((item) => conversationPeerAccount(item) === peerAccount) || this.currentConversation
       }
     },
     async refreshFriendRequests() {
-      this.friendRequests = await listFriendRequests()
+      this.friendRequests = await getFriendRequestList()
     },
     async addFriendByAccount(account) {
-      await addFriend(account)
+      await requestFriend(account)
     },
     async acceptFriendRequest(id) {
-      await acceptFriendRequest(id)
+      await approveFriendRequest(id)
       await this.refreshFriendRequests()
       await this.refreshFriends()
       await this.refreshConversations()
@@ -166,7 +166,7 @@ export const useChatStore = defineStore('chat', {
       const peerID = conversationPeerID(conversation)
       const peerAccount = conversationPeerAccount(conversation)
       if (!peerID || !peerAccount) return
-      const rows = await getHistory({ friend_id: peerID })
+      const rows = await getConversationHistory({ friend_id: peerID })
       this.messages[peerAccount] = rows.map((item) => normalizeMessage(item, this.account, conversation))
     },
     connectSocket() {

@@ -4,23 +4,23 @@ import (
 	"log"
 
 	"chat-system/server/api"
-	"chat-system/server/api/websocket"
 	"chat-system/server/configs"
-	conversationapi "chat-system/server/internal/conversation/api"
 	conversationapplication "chat-system/server/internal/conversation/application"
+	conversationhttp "chat-system/server/internal/conversation/interfaces/http"
 	conversationrepository "chat-system/server/internal/conversation/repository"
-	friendapi "chat-system/server/internal/friend/api"
 	friendapplication "chat-system/server/internal/friend/application"
+	friendhttp "chat-system/server/internal/friend/interfaces/http"
 	friendrepository "chat-system/server/internal/friend/repository"
 	"chat-system/server/internal/infrastructure"
-	messageapi "chat-system/server/internal/message/api"
+	"chat-system/server/internal/infrastructure/websocket"
 	messageapplication "chat-system/server/internal/message/application"
+	messagehttp "chat-system/server/internal/message/interfaces/http"
 	messagerepository "chat-system/server/internal/message/repository"
-	notificationapplication "chat-system/server/internal/notification/application"
-	notificationinfra "chat-system/server/internal/notification/infra"
-	userapi "chat-system/server/internal/user/api"
+	presenceapplication "chat-system/server/internal/presence/application"
+	presenceinfra "chat-system/server/internal/presence/infra"
 	userapplication "chat-system/server/internal/user/application"
 	userinfra "chat-system/server/internal/user/infra"
+	userhttp "chat-system/server/internal/user/interfaces/http"
 	userrepository "chat-system/server/internal/user/repository"
 )
 
@@ -37,23 +37,23 @@ func main() {
 	friendRepository := friendrepository.NewMySQLRepository()
 	conversationRepository := conversationrepository.NewMySQLRepository()
 	messageRepository := messagerepository.NewMySQLRepository()
-	presenceStore := notificationinfra.NewRedisPresenceStore(infrastructure.RedisClient)
+	presenceStore := presenceinfra.NewRedisPresenceStore(infrastructure.RedisClient)
 
 	userService := userapplication.NewService(userRepository, sessionStore)
-	notificationService := notificationapplication.NewService(presenceStore)
-	friendService := friendapplication.NewService(friendRepository, userService, notificationService)
+	presenceService := presenceapplication.NewService(presenceStore)
+	friendService := friendapplication.NewService(friendRepository, userService, presenceService)
 	conversationService := conversationapplication.NewService(conversationRepository, userService, nil)
-	messageService := messageapplication.NewService(messageRepository, userService, friendService, conversationService, notificationService)
+	messageService := messageapplication.NewService(messageRepository, userService, friendService, conversationService, presenceService)
 	conversationService = conversationapplication.NewService(conversationRepository, userService, messageService)
 
-	hub := websocket.NewHub(userService, messageService, notificationService)
+	hub := websocket.NewHub(userService, messageService, presenceService)
 	go hub.Run()
 
 	handlers := api.Handlers{
-		Users:         userapi.NewHandler(userService),
-		Friends:       friendapi.NewHandler(friendService),
-		Conversations: conversationapi.NewHandler(conversationService),
-		Messages:      messageapi.NewHandler(messageService),
+		Users:         userhttp.NewHandler(userService),
+		Friends:       friendhttp.NewHandler(friendService),
+		Conversations: conversationhttp.NewHandler(conversationService),
+		Messages:      messagehttp.NewHandler(messageService),
 	}
 	router := api.NewRouter(handlers, hub)
 	log.Printf("chat server listening on %s", cfg.HTTPAddr)

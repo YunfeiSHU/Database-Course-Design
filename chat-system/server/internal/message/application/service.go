@@ -7,7 +7,7 @@ import (
 	"chat-system/server/internal/common"
 	messagedomain "chat-system/server/internal/message/domain"
 	messagerepository "chat-system/server/internal/message/repository"
-	notificationdomain "chat-system/server/internal/notification/domain"
+	presencedomain "chat-system/server/internal/presence/domain"
 	userdomain "chat-system/server/internal/user/domain"
 )
 
@@ -22,11 +22,11 @@ type FriendChecker interface {
 }
 
 type ConversationUpdater interface {
-	TouchMessage(senderID uint, receiverID uint, messageID uint) error
+	MarkConversationUpdated(senderID uint, receiverID uint, messageID uint) error
 }
 
 type Notifier interface {
-	MessageDelivered(from string, to string, content string) notificationdomain.Event
+	MessageDelivered(from string, to string, content string) presencedomain.Event
 }
 
 type Service struct {
@@ -86,7 +86,7 @@ func (s *Service) Send(senderID uint, senderAccount string, receiverAccount stri
 	if err := s.repository.UpdateStatus(message.ID, message.Status); err != nil {
 		return nil, err
 	}
-	if err := s.conversations.TouchMessage(senderID, receiver.ID, message.ID); err != nil {
+	if err := s.conversations.MarkConversationUpdated(senderID, receiver.ID, message.ID); err != nil {
 		return nil, err
 	}
 	sendTime := message.SendTime

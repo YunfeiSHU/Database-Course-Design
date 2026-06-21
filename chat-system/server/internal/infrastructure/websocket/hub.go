@@ -7,7 +7,7 @@ import (
 	"time"
 
 	messageapplication "chat-system/server/internal/message/application"
-	notificationdomain "chat-system/server/internal/notification/domain"
+	presencedomain "chat-system/server/internal/presence/domain"
 	userapplication "chat-system/server/internal/user/application"
 )
 
@@ -35,8 +35,8 @@ type MessageSender interface {
 }
 
 type NoticeService interface {
-	MarkOnline(account string, userID uint) notificationdomain.Event
-	MarkOffline(account string) notificationdomain.Event
+	MarkOnline(account string, userID uint) presencedomain.Event
+	MarkOffline(account string) presencedomain.Event
 }
 
 func NewHub(sessions SessionParser, messages MessageSender, notices NoticeService) *Hub {
@@ -107,7 +107,7 @@ func (h *Hub) handleMessage(client *Client, msg Message) {
 	}
 }
 
-func (h *Hub) broadcastEvent(event notificationdomain.Event) {
+func (h *Hub) broadcastEvent(event presencedomain.Event) {
 	h.broadcast(NewMessage(event.Type, event.Data))
 }
 

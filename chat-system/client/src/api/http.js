@@ -21,26 +21,26 @@ export function login(payload) {
   return http.post('/api/login', payload).then((res) => res.data)
 }
 
-export function listFriends() {
+export function getFriendList() {
   return http.get('/api/friends').then((res) => res.data)
 }
 
-export function listConversations() {
+export function getConversationList() {
   return http.get('/api/conversations').then((res) => res.data)
 }
 
-export function addFriend(account) {
+export function requestFriend(account) {
   return http.post('/api/friends', { account }).then((res) => res.data)
 }
 
-export function listFriendRequests() {
+export function getFriendRequestList() {
   return http.get('/api/friend-requests').then((res) => res.data)
 }
 
-export function acceptFriendRequest(id) {
+export function approveFriendRequest(id) {
   return http.post(`/api/friend-requests/${id}/accept`).then((res) => res.data)
 }
 
-export function getHistory(params) {
+export function getConversationHistory(params) {
   return http.get('/api/history', { params }).then((res) => res.data)
 }

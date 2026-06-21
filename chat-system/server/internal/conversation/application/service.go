@@ -5,23 +5,23 @@ import (
 	"time"
 
 	"chat-system/server/internal/common"
-	conversationdomain "chat-system/server/internal/conversation/domain"
-	conversationrepository "chat-system/server/internal/conversation/repository"
-	messagedomain "chat-system/server/internal/message/domain"
-	userdomain "chat-system/server/internal/user/domain"
+	conversationDomain "chat-system/server/internal/conversation/domain"
+	conversationRepository "chat-system/server/internal/conversation/repository"
+	messageDomain "chat-system/server/internal/message/domain"
+	userDomain "chat-system/server/internal/user/domain"
 )
 
 type UserProvider interface {
-	FindByID(userID uint) (*userdomain.User, error)
+	FindByID(userID uint) (*userDomain.User, error)
 }
 
 type MessageProvider interface {
-	ListHistory(userID uint, friendID uint, limit int) ([]messagedomain.Message, error)
-	FindByID(messageID uint) (*messagedomain.Message, error)
+	ListHistory(userID uint, friendID uint, limit int) ([]messageDomain.Message, error)
+	FindByID(messageID uint) (*messageDomain.Message, error)
 }
 
 type Service struct {
-	repository conversationrepository.ConversationRepository
+	repository conversationRepository.ConversationRepository
 	users      UserProvider
 	messages   MessageProvider
 }
@@ -33,17 +33,17 @@ type Item struct {
 	LastMessageID uint                   `json:"last_message_id"`
 	Status        string                 `json:"status"`
 	UpdateTime    time.Time              `json:"update_time"`
-	Peer          userdomain.User        `json:"peer"`
-	LastMessage   *messagedomain.Message `json:"last_message,omitempty"`
+	Peer          userDomain.User        `json:"peer"`
+	LastMessage   *messageDomain.Message `json:"last_message,omitempty"`
 }
 
-func NewService(repository conversationrepository.ConversationRepository, users UserProvider, messages MessageProvider) *Service {
+func NewService(repository conversationRepository.ConversationRepository, users UserProvider, messages MessageProvider) *Service {
 	return &Service{repository: repository, users: users, messages: messages}
 }
 
-func (s *Service) TouchMessage(senderID uint, receiverID uint, messageID uint) error {
+func (s *Service) MarkConversationUpdated(senderID uint, receiverID uint, messageID uint) error {
 	now := time.Now()
-	if err := s.repository.Upsert(conversationdomain.Conversation{
+	if err := s.repository.Upsert(conversationDomain.Conversation{
 		UserID:        senderID,
 		PeerID:        receiverID,
 		LastMessageID: messageID,
@@ -52,7 +52,7 @@ func (s *Service) TouchMessage(senderID uint, receiverID uint, messageID uint) e
 	}); err != nil {
 		return err
 	}
-	return s.repository.Upsert(conversationdomain.Conversation{
+	return s.repository.Upsert(conversationDomain.Conversation{
 		UserID:        receiverID,
 		PeerID:        senderID,
 		LastMessageID: messageID,
