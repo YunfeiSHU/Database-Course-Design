@@ -12,9 +12,9 @@ WebSocket 地址：
 ws://127.0.0.1:8080/ws?token=<登录返回的 token>
 ```
 
-前端开发环境通过 Vite 代理访问后端，所以客户端代码中请求的是 `/api/...` 和 `/ws`。
+前端开发环境通过 Vite 代理访问后端，所以客户端代码里实际请求的是 `/api/...` 和 `/ws`。
 
-后端 websocket 传输适配层当前位于 [server/internal/infrastructure/websocket](../server/internal/infrastructure/websocket)。
+后端 WebSocket 传输适配层位于 [server/internal/infrastructure/websocket](../server/internal/infrastructure/websocket)。
 
 ## 通用约定
 
@@ -36,7 +36,7 @@ WebSocket 使用查询参数传 token：
 
 - `200`：请求成功。
 - `400`：请求参数错误，或当前业务操作不允许。
-- `401`：未登录、token 无效，或登录时账号/密码错误。
+- `401`：未登录、token 无效，或登录时账号或密码错误。
 - `500`：服务端依赖异常或内部错误。服务端会输出日志帮助定位。
 
 ### 错误响应
@@ -146,7 +146,7 @@ Authorization: Bearer <token>
 ]
 ```
 
-说明：好友列表是独立列表，用于展示可聊天联系人和在线状态，不等同于对话列表。
+说明：好友列表用于展示可聊天联系人和在线状态，不等同于对话列表。
 
 ### 发送好友申请
 
@@ -258,7 +258,7 @@ Authorization: Bearer <token>
 ### 获取历史消息
 
 ```http
-GET /api/history?friend_id=2
+GET /api/conversations/:peerId/messages
 Authorization: Bearer <token>
 ```
 
