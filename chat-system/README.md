@@ -8,7 +8,7 @@ Go + Vue 3 即时聊天系统，包含 Web 客户端、Gin HTTP API、Gorilla We
 - Redis 保存登录 session，HTTP 鉴权使用 `Authorization: Bearer <token>`。
 - 好友申请、好友同意、好友列表与在线状态。
 - 独立的好友列表、对话列表和消息区。
-- WebSocket 实时收发消息，消息落库后更新对话列表。
+- WebSocket 实时收发消息，消息落库后更新对话列表，并广播在线状态。
 - 历史消息查询，聊天窗口展示最近多条消息。
 - 服务端关键错误带日志，Redis/MySQL 等基础设施异常会返回 500，账号密码错误返回 401。
 
@@ -36,7 +36,6 @@ chat-system
 │   └── protocol.md
 ├── server
 │   ├── api
-│   │   └── websocket
 │   ├── cmd
 │   │   └── server
 │   ├── configs
@@ -45,12 +44,12 @@ chat-system
 │   │   ├── friend
 │   │   ├── infrastructure
 │   │   ├── message
-│   │   ├── notification
+│   │   ├── presence
 │   │   └── user
 │   └── pkg
-└── sql
-	├── schema.sql
-	└── migration_friend_status.sql
+├── sql
+    ├── schema.sql
+    └── migration_friend_status.sql
 ```
 
 ## 环境准备
@@ -162,6 +161,13 @@ HTTP API 和 WebSocket 协议见 [docs/protocol.md](docs/protocol.md)。
 ```powershell
 cd chat-system/server
 go test ./...
+```
+
+或者只做编译检查：
+
+```powershell
+cd chat-system/server
+go build ./cmd/server
 ```
 
 客户端：
