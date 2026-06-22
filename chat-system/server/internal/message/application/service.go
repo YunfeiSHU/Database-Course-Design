@@ -27,6 +27,7 @@ type ConversationUpdater interface {
 
 type Notifier interface {
 	MessageDelivered(from string, to string, content string) presencedomain.Event
+	MessageRecalled(from string, to string, messageID uint) presencedomain.Event
 }
 
 type Service struct {
@@ -44,6 +45,16 @@ type DeliveredMessage struct {
 	SendTime string `json:"send_time,omitempty"`
 	Status   string `json:"status,omitempty"`
 }
+
+type RecalledMessage struct {
+	ID      uint   `json:"id"`
+	From    string `json:"from,omitempty"`
+	To      string `json:"to,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
+var ErrCannotRecall = errors.New("message cannot be recalled")
 
 func NewService(repository messagerepository.MessageRepository, users UserFinder, friends FriendChecker, conversations ConversationUpdater, notifier Notifier) *Service {
 	return &Service{repository: repository, users: users, friends: friends, conversations: conversations, notifier: notifier}
@@ -95,4 +106,31 @@ func (s *Service) Send(senderID uint, senderAccount string, receiverAccount stri
 	}
 	_ = s.notifier.MessageDelivered(senderAccount, receiverAccount, content)
 	return &DeliveredMessage{From: senderAccount, To: receiverAccount, Content: content, SendTime: sendTime.Format(time.RFC3339), Status: message.Status}, nil
+}
+
+func (s *Service) Recall(senderID uint, senderAccount string, messageID uint) (*RecalledMessage, error) {
+	message, err := s.repository.FindByID(messageID)
+	if err != nil {
+		return nil, err
+	}
+	if message.SenderID != senderID {
+		return nil, ErrCannotRecall
+	}
+	if message.Status == common.MessageStatusRecalled {
+		return nil, ErrCannotRecall
+	}
+	if message.Status != common.MessageStatusCreated && message.Status != common.MessageStatusSending && message.Status != common.MessageStatusDelivered {
+		return nil, ErrCannotRecall
+	}
+	recalledContent := "[消息已撤回]"
+	message.Recall(common.MessageStatusRecalled)
+	message.Content = recalledContent
+	if err := s.repository.UpdateContentAndStatus(message.ID, message.Content, message.Status); err != nil {
+		return nil, err
+	}
+	if err := s.conversations.MarkConversationUpdated(message.SenderID, message.ReceiverID, message.ID); err != nil {
+		return nil, err
+	}
+	_ = s.notifier.MessageRecalled(senderAccount, "", message.ID)
+	return &RecalledMessage{ID: message.ID, From: senderAccount, To: "", Status: message.Status, Content: recalledContent}, nil
 }

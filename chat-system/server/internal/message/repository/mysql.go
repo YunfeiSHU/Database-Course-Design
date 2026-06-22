@@ -27,6 +27,13 @@ func (MySQLRepository) UpdateStatus(messageID uint, status string) error {
 	return dao.DB.Table(messagedomain.TableName).Where("id = ?", messageID).Update("status", status).Error
 }
 
+func (MySQLRepository) UpdateContentAndStatus(messageID uint, content string, status string) error {
+	return dao.DB.Table(messagedomain.TableName).Where("id = ?", messageID).Updates(map[string]interface{}{
+		"content": content,
+		"status":  status,
+	}).Error
+}
+
 func (MySQLRepository) List(userID uint, friendID uint, limit int) ([]messagedomain.Message, error) {
 	var messages []messagedomain.Message
 	err := dao.DB.Table(messagedomain.TableName).

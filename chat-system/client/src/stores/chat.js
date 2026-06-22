@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ElNotification } from 'element-plus'
-import { approveFriendRequest, getConversationHistory, getConversationList, getFriendList, getFriendRequestList, login, register, requestFriend } from '../api/http'
+import { approveFriendRequest, getConversationHistory, getConversationList, getFriendList, getFriendRequestList, login, recallMessage, register, requestFriend } from '../api/http'
 import { createChatSocket } from '../websocket/chatSocket'
 
 const MESSAGE_STATUS_TEXT = {
@@ -11,18 +11,31 @@ const MESSAGE_STATUS_TEXT = {
   recalled: '已撤回'
 }
 
+const REVOKED_MESSAGE_TEXT = '[消息已撤回]'
+
 function normalizeMessage(item, selfAccount, peer) {
   const peerID = peer?.peer_id || peer?.friend_id
   const peerAccount = peer?.peer?.account || peer?.friend?.account
   const from = item.from || (item.sender_id === peerID ? peerAccount : selfAccount)
   const to = item.to || (item.receiver_id === peerID ? peerAccount : selfAccount)
   return {
+    id: item.id,
     from,
     to,
     content: item.content,
     send_time: item.send_time,
     status: item.status || 'delivered',
     status_text: MESSAGE_STATUS_TEXT[item.status] || MESSAGE_STATUS_TEXT.delivered
+  }
+}
+
+function markRecalledMessage(message) {
+  if (!message) return message
+  return {
+    ...message,
+    content: REVOKED_MESSAGE_TEXT,
+    status: 'recalled',
+    status_text: MESSAGE_STATUS_TEXT.recalled
   }
 }
 
@@ -187,6 +200,14 @@ export const useChatStore = defineStore('chat', {
         content: content.trim()
       })
     },
+    recallMessage(messageID) {
+      if (!messageID) return false
+      return recallMessage(messageID).then((message) => {
+        this.updateMessageById(message.id, markRecalledMessage)
+        this.refreshConversations()
+        return message
+      })
+    },
     handleSocketMessage(message) {
       const data = message.data || {}
       if (message.type === 'chat') {
@@ -199,6 +220,10 @@ export const useChatStore = defineStore('chat', {
         }
         this.refreshConversations()
       }
+      if (message.type === 'revoke') {
+        this.updateMessageById(data.id, markRecalledMessage)
+        this.refreshConversations()
+      }
       if (message.type === 'system') {
         ElNotification({ title: '系统消息', message: data.content || '系统消息', type: 'warning' })
       }
@@ -209,6 +234,14 @@ export const useChatStore = defineStore('chat', {
         const friend = this.friends.find((item) => item.friend.account === data.account)
         if (friend) friend.online = message.type === 'online'
       }
+    },
+    updateMessageById(messageID, transform) {
+      Object.keys(this.messages).forEach((peerAccount) => {
+        const index = this.messages[peerAccount].findIndex((item) => item.id === messageID)
+        if (index !== -1) {
+          this.messages[peerAccount][index] = transform(this.messages[peerAccount][index])
+        }
+      })
     }
   }
 })

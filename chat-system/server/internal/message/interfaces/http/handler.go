@@ -14,6 +14,10 @@ type Handler struct {
 	messageService *messageApplication.Service
 }
 
+type recallRequest struct {
+	MessageID uint `json:"message_id"`
+}
+
 func NewHandler(messageService *messageApplication.Service) *Handler {
 	return &Handler{messageService: messageService}
 }
@@ -54,4 +58,25 @@ func (h *Handler) GetConversationHistory(c *gin.Context) {
 		messages = rows
 	}
 	c.JSON(http.StatusOK, messages)
+}
+
+// RecallMessage 撤回指定消息，仅允许消息发送者执行。
+func (h *Handler) RecallMessage(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+	var req recallRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.MessageID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message_id is required"})
+		return
+	}
+	account := c.MustGet("account").(string)
+	message, err := h.messageService.Recall(userID, account, req.MessageID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err == messageApplication.ErrCannotRecall {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, message)
 }

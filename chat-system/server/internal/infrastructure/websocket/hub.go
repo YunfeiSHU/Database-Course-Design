@@ -32,6 +32,7 @@ type SessionParser interface {
 
 type MessageSender interface {
 	Send(senderID uint, senderAccount string, receiverAccount string, content string) (*messageapplication.DeliveredMessage, error)
+	Recall(senderID uint, senderAccount string, messageID uint) (*messageapplication.RecalledMessage, error)
 }
 
 type NoticeService interface {
@@ -93,6 +94,27 @@ func (h *Hub) handleMessage(client *Client, msg Message) {
 		}
 		out := NewMessage(TypeChat, delivered)
 		if target, ok := h.Clients[data.To]; ok {
+			target.Send <- Encode(out)
+		}
+		client.Send <- Encode(out)
+	case TypeRecall:
+		var data RecallData
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Printf("websocket recall decode failed for account %q: %v", client.Account, err)
+			client.Send <- Encode(NewMessage(TypeSystem, SystemData{Content: "撤回消息格式错误"}))
+			return
+		}
+		if data.MessageID == 0 {
+			return
+		}
+		recalled, err := h.messages.Recall(client.UserID, client.Account, data.MessageID)
+		if err != nil {
+			log.Printf("websocket recall message failed for account %q message %d: %v", client.Account, data.MessageID, err)
+			client.Send <- Encode(NewMessage(TypeSystem, SystemData{Content: err.Error()}))
+			return
+		}
+		out := NewMessage(TypeRecall, recalled)
+		if target, ok := h.Clients[recalled.To]; ok {
 			target.Send <- Encode(out)
 		}
 		client.Send <- Encode(out)

@@ -26,6 +26,7 @@ func NewRouter(handlers Handlers, hub *websocket.Hub) *gin.Engine {
 			authenticated.GET("/conversations", handlers.Conversations.GetConversationList)
 			authenticated.GET("/messages", handlers.Messages.GetHistoryMessages)
 			authenticated.GET("/history", handlers.Messages.GetConversationHistory)
+			authenticated.POST("/messages/recall", handlers.Messages.RecallMessage)
 		}
 	}
 

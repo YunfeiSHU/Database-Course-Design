@@ -125,7 +125,7 @@
           <div class="message-list">
             <div
               v-for="(message, index) in store.currentMessages"
-              :key="index"
+              :key="message.id || index"
               class="message-row"
               :class="{ mine: message.from === store.account }"
             >
@@ -133,6 +133,16 @@
                 <time>{{ formatTime(message.send_time) }}</time>
                 <p>{{ message.content }}</p>
                 <small v-if="message.from === store.account" class="message-status">{{ message.status_text }}</small>
+                <el-button
+                  v-if="message.from === store.account && message.status !== 'recalled'"
+                  link
+                  type="danger"
+                  size="small"
+                  class="message-recall"
+                  @click="handleRecallMessage(message.id)"
+                >
+                  撤回
+                </el-button>
               </div>
             </div>
           </div>
@@ -234,6 +244,15 @@ function sendMessage() {
     draft.value = ''
     scrollToBottom()
   }
+}
+
+function handleRecallMessage(messageID) {
+  if (!messageID) return
+  store.recallMessage(messageID)
+    .then(() => scrollToBottom())
+    .catch((error) => {
+      ElMessage.error(error.response?.data?.error || '撤回失败')
+    })
 }
 
 async function handleAddFriend() {

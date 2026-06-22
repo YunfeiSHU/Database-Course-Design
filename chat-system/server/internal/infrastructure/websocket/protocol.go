@@ -8,6 +8,7 @@ import (
 
 const (
 	TypeChat         = "chat"
+	TypeRecall       = "revoke"
 	TypeSystem       = "system"
 	TypeOnline       = "online"
 	TypeOffline      = "offline"
@@ -25,6 +26,12 @@ type ChatData struct {
 	To       string `json:"to,omitempty"`
 	Content  string `json:"content,omitempty"`
 	SendTime string `json:"send_time,omitempty"`
+}
+
+type RecallData struct {
+	MessageID uint   `json:"message_id"`
+	Content   string `json:"content,omitempty"`
+	Status    string `json:"status,omitempty"`
 }
 
 func Encode(message Message) []byte {

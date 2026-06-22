@@ -31,6 +31,10 @@ func (s *Service) MessageDelivered(from string, to string, content string) prese
 	return presencedomain.Event{Type: "message_delivered", Data: map[string]string{"from": from, "to": to, "content": content}}
 }
 
+func (s *Service) MessageRecalled(from string, to string, messageID uint) presencedomain.Event {
+	return presencedomain.Event{Type: "revoke", Data: map[string]interface{}{"from": from, "to": to, "message_id": messageID}}
+}
+
 func System(content string) presencedomain.Event {
 	return presencedomain.Event{Type: "system", Data: presencedomain.SystemData{Content: content}}
 }

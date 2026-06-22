@@ -44,3 +44,7 @@ export function approveFriendRequest(id) {
 export function getConversationHistory(params) {
   return http.get('/api/history', { params }).then((res) => res.data)
 }
+
+export function recallMessage(messageID) {
+  return http.post('/api/messages/recall', { message_id: messageID }).then((res) => res.data)
+}
